@@ -11,14 +11,19 @@ import gocept.gtimelog.core
 import gocept.gtimelog.util
 import sys
 
+try:
+    import curses
+except ImportError:
+    curses = None
 
-class Colors(object):
+
+class WithColors(object):
 
     RED = '\033[1m'
     BLACK = '\033[0m'
 
 
-class NoColors(object):
+class WithoutColors(object):
 
     RED = ''
     BLACK = ''
@@ -27,9 +32,14 @@ class NoColors(object):
 def main():
     global Colors
     """Run the program."""
-    is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
-    if not is_a_tty:
-        Colors = NoColors
+    Colors = WithoutColors
+    if curses:
+        try:
+            curses.setupterm()
+        except curses.error:
+            pass
+        else:
+            Colors = WithColors
     # Argument parsing
     parser = argparse.ArgumentParser(
         description=u'Show the progress of the current week')
