@@ -86,6 +86,11 @@ def main():
         default=datetime.today().strftime('%Y-%m-%d'),
         help='Day of the week the progress should be calculated for. '
              '(default: today)')
+    parser.add_argument(
+        '--summary',
+        '-s',
+        action='store_true',
+        help='Print output as a summary of tasks')
     args = parser.parse_args()
 
     # Load config
@@ -101,7 +106,7 @@ def main():
 
     today_window = timelog.window_for(today, today + timedelta(1))
     today_window.daily_report_timeline(
-        sys.stdout, settings.email, settings.name)
+        sys.stdout, settings.email, settings.name, summary=args.summary)
 
     total_work, total_slacking, total_holidays = (
         timelog.window_for(monday, sunday).totals())
