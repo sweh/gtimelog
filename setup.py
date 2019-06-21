@@ -46,4 +46,5 @@ setup(
         gtl-progress = gocept.gtimelog.progress:main
         gtl-log = gocept.gtimelog.log:log
         gtl-updatetasks = gocept.gtimelog.log:download
+        gtl-edit = gocept.gtimelog.log:open_editor
     """)

@@ -282,6 +282,13 @@ class TimeWindow(object):
         print >> output, ("Time spent slacking: %s" %
                           format_duration_long(total_slacking))
 
+    def _format_duration(self, duration):
+        duration = duration.seconds / 60
+        hours = duration / 60
+        minutes = duration - (hours * 60)
+        minutes = '0%s' % minutes if minutes < 10 else minutes
+        return hours, minutes
+
     def daily_report_timeline(self, output, email, who):
         """Format a daily report with your timeline entries."""
         # Locale is set as a side effect of 'import gtk', so strftime('%a')
@@ -300,14 +307,16 @@ class TimeWindow(object):
             return
         start, stop, duration, entry = items[0]
         for start, stop, duration, entry in items[1:]:
-            print >> output, "%s - %s (%3s): %s" % (
+            hours, minutes = self._format_duration(duration)
+            print >> output, "%s - %s (%s:%s): %s" % (
                 start.strftime('%H:%M'), stop.strftime('%H:%M'),
-                duration.seconds / 60, entry.encode('utf-8'))
+                hours, minutes, entry.encode('utf-8'))
         now = datetime.datetime.now()
         if stop.date() == now.date():
-            print >> output, "%s - %s (%3d): **current task**" % (
+            hours, minutes = self._format_duration(now - stop)
+            print >> output, "%s - %s (%s:%s): **current task**" % (
                 stop.strftime('%H:%M'), now.strftime('%H:%M'),
-                (now - stop).seconds / 60)
+                hours, minutes)
         print >> output
         work, slack, hold = self.grouped_entries()
         total_work, total_slacking, total_holidays = self.totals()
