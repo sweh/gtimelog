@@ -289,7 +289,7 @@ class TimeWindow(object):
         minutes = '0%s' % minutes if minutes < 10 else minutes
         return hours, minutes
 
-    def daily_report_timeline(self, output, email, who):
+    def daily_report_timeline(self, output, email, who, summary=False):
         """Format a daily report with your timeline entries."""
         # Locale is set as a side effect of 'import gtk', so strftime('%a')
         # would give us translated names
@@ -306,11 +306,34 @@ class TimeWindow(object):
             print >> output, "No work done today."
             return
         start, stop, duration, entry = items[0]
-        for start, stop, duration, entry in items[1:]:
-            hours, minutes = self._format_duration(duration)
-            print >> output, "%s - %s (%s:%s): %s" % (
-                start.strftime('%H:%M'), stop.strftime('%H:%M'),
-                hours, minutes, entry.encode('utf-8'))
+        if summary == False:
+            for start, stop, duration, entry in items[1:]:
+                hours, minutes = self._format_duration(duration)
+                print >> output, "%s - %s (%s:%s): %s" % (
+                    start.strftime('%H:%M'), stop.strftime('%H:%M'),
+                    hours, minutes, entry.encode('utf-8'))
+        else:
+            combined = {}
+            for start, stop, duration, entry in items[1:]:
+                if ':' not in entry:
+                    continue
+                proj, subproj, entry = entry.split(':', 2)
+                entry = entry.strip()
+                project = '%s:%s' % (proj, subproj)
+                if project not in combined:
+                    combined[project] = []
+                combined[project].append((duration, entry))
+            for project, items in combined.items():
+                duration = datetime.timedelta(0)
+                entries = []
+                for dur, entr in items:
+                    duration += dur
+                    entries.append(entr)
+                entries = list(set(entries))
+                entry = project + ': ' + '; '.join(entries)
+                hours, minutes = self._format_duration(duration)
+                print >> output, "(%s:%s): %s" % (
+                    hours, minutes, entry.encode('utf-8'))
         now = datetime.datetime.now()
         if stop.date() == now.date():
             hours, minutes = self._format_duration(now - stop)
