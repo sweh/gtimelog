@@ -68,7 +68,7 @@ class TimeWindow(object):
             return None
         return self.items[-1][0]
 
-    def all_entries(self):
+    def all_entries(self, filter_=None):
         """Iterate over all entries.
 
         Yields (start, stop, duration, entry) tuples.  The first entry
@@ -83,6 +83,8 @@ class TimeWindow(object):
                                                self.virtual_midnight):
                 start = stop
             duration = stop - start
+            if filter_ and filter_ not in entry:
+                continue
             yield start, stop, duration, entry
 
     def count_days(self):
@@ -283,13 +285,14 @@ class TimeWindow(object):
                           format_duration_long(total_slacking))
 
     def _format_duration(self, duration):
-        duration = duration.seconds / 60
+        duration = int(duration.total_seconds()) / 60
         hours = duration / 60
         minutes = duration - (hours * 60)
         minutes = '0%s' % minutes if minutes < 10 else minutes
         return hours, minutes
 
-    def daily_report_timeline(self, output, email, who, summary=False):
+    def daily_report_timeline(
+            self, output, email, who, summary=False, filter_=None):
         """Format a daily report with your timeline entries."""
         # Locale is set as a side effect of 'import gtk', so strftime('%a')
         # would give us translated names
@@ -301,7 +304,7 @@ class TimeWindow(object):
                           % {'date': self.min_timestamp.strftime('%Y-%m-%d'),
                              'weekday': weekday, 'week': week, 'who': who})
         print >> output
-        items = list(self.all_entries())
+        items = list(self.all_entries(filter_))
         if not items:
             print >> output, "No work done today."
             return

@@ -30,20 +30,16 @@ class WithoutColors(object):
 
 
 HOLIDAYS = [
-    date(2018, 1, 1),
-    date(2018, 1, 6),
-    date(2018, 3, 30),
-    date(2018, 4, 1),
-    date(2018, 4, 2),
-    date(2018, 5, 1),
-    date(2018, 5, 10),
-    date(2018, 5, 20),
-    date(2018, 5, 21),
-    date(2018, 10, 3),
-    date(2018, 10, 31),
-    date(2018, 12, 24),
-    date(2018, 12, 25),
-    date(2018, 12, 26),
+    date(2020, 1, 1),
+    date(2020, 4, 10),
+    date(2020, 4, 13),
+    date(2020, 5, 1),
+    date(2020, 5, 21),
+    date(2020, 6, 1),
+    date(2020, 10, 3),
+    date(2020, 10, 31),
+    date(2020, 12, 25),
+    date(2020, 12, 26),
 ]
 
 
@@ -91,6 +87,11 @@ def main():
         '-s',
         action='store_true',
         help='Print output as a summary of tasks')
+    parser.add_argument(
+        '--ticket',
+        '-t',
+        default=None,
+        help='Print output summary of ticket')
     args = parser.parse_args()
 
     # Load config
@@ -105,6 +106,20 @@ def main():
         settings, timelog, (monday, sunday))
 
     today_window = timelog.window_for(today, today + timedelta(1))
+    if args.ticket:
+        window = timelog.window_for(
+            today - timedelta(days=180),
+            today + timedelta(1)
+        )
+        window.daily_report_timeline(
+            sys.stdout,
+            settings.email,
+            settings.name,
+            summary=True,
+            filter_=args.ticket
+        )
+        return
+
     today_window.daily_report_timeline(
         sys.stdout, settings.email, settings.name, summary=args.summary)
 
