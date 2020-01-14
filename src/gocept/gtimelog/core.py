@@ -317,7 +317,8 @@ class TimeWindow(object):
                     hours, minutes, entry.encode('utf-8'))
         else:
             combined = {}
-            for start, stop, duration, entry in items[1:]:
+            items_ = items if filter_ else items[1:]
+            for start, stop, duration, entry in items_:
                 if ':' not in entry:
                     continue
                 proj, subproj, entry = entry.split(':', 2)
@@ -338,7 +339,7 @@ class TimeWindow(object):
                 print >> output, "(%s:%s): %s" % (
                     hours, minutes, entry.encode('utf-8'))
         now = datetime.datetime.now()
-        if stop.date() == now.date():
+        if not filter_ and stop.date() == now.date():
             hours, minutes = self._format_duration(now - stop)
             print >> output, "%s - %s (%s:%s): **current task**" % (
                 stop.strftime('%H:%M'), now.strftime('%H:%M'),
