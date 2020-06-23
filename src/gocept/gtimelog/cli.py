@@ -108,13 +108,13 @@ def main():
         window.min_timestamp, window.max_timestamp))
 
     # 1. collmex
-    try:
-        collmex = gocept.gtimelog.collmex.Collmex(settings)
-        collmex.report(window.all_entries())
-    except Exception, exc:
-        notify(settings, 'error', 'Error filling collmex', exc)
-    else:
-        notify(settings, 'info', 'Collmex: success')
+    #try:
+    #    collmex = gocept.gtimelog.collmex.Collmex(settings)
+    #    collmex.report(window.all_entries())
+    #except Exception, exc:
+    #    notify(settings, 'error', 'Error filling collmex', exc)
+    #else:
+    #    notify(settings, 'info', 'Collmex: success')
 
     # 2. Bugtracker
     try:

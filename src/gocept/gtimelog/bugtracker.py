@@ -50,6 +50,7 @@ class Bugtrackers(object):
     def __init__(self, settings):
         self.trackers = []
         for config in settings.redmines:
+            import gocept.gtimelog.redmine
             redmine = gocept.gtimelog.redmine.Redmine(
                 config['url'], config['api_key'], config['activity'],
                 config['projects'])
