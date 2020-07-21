@@ -324,6 +324,8 @@ class TimeWindow(object):
                 proj, subproj, entry = entry.split(':', 2)
                 entry = entry.strip()
                 project = '%s:%s' % (proj, subproj)
+                if entry.startswith('#'):
+                    project += entry.split(' ')[0]
                 if project not in combined:
                     combined[project] = []
                 combined[project].append((duration, entry))
@@ -334,6 +336,8 @@ class TimeWindow(object):
                     duration += dur
                     entries.append(entr)
                 entries = list(set(entries))
+                if '#' in project:
+                    project = project.split('#')[0]
                 entry = project + ': ' + '; '.join(entries)
                 hours, minutes = self._format_duration(duration)
                 print >> output, "(%s:%s): %s" % (
