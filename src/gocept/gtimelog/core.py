@@ -570,6 +570,9 @@ class Settings(object):
     collmex_password = ''
     collmex_task_language = 'en'
 
+    timetracker_username = ''
+    timetracker_password = ''
+
     redmines = []
     jiras = []
 
@@ -598,6 +601,10 @@ class Settings(object):
         config.set('collmex', 'username', self.collmex_username)
         config.set('collmex', 'password', self.collmex_password)
         config.set('collmex', 'task_language', self.collmex_task_language)
+
+        config.add_section('timetracker')
+        config.set('timetracker', 'username', self.timetracker_username)
+        config.set('timetracker', 'password', self.timetracker_password)
 
         return config
 
@@ -640,6 +647,9 @@ class Settings(object):
         self.collmex_password = decode_password(config.get(
             'collmex', 'password'))
         self.collmex_task_language = config.get('collmex', 'task_language')
+
+        self.timetracker_username = config.get('timetracker', 'username')
+        self.timetracker_password = config.get('timetracker', 'password')
 
         for section in config.sections():
             if not section.startswith('redmine'):

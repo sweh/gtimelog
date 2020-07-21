@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import gocept.gtimelog.collmex
+import gocept.gtimelog.timetracker
 import gocept.gtimelog.core
 import gocept.gtimelog.redmine
 import logging
@@ -115,6 +116,15 @@ def main():
     #    notify(settings, 'error', 'Error filling collmex', exc)
     #else:
     #    notify(settings, 'info', 'Collmex: success')
+
+    # 1. Timetracker
+    try:
+        timetracker = gocept.gtimelog.timetracker.Timetracker(settings)
+        timetracker.report(window.all_entries())
+    except Exception, exc:
+        notify(settings, 'error', 'Error filling timetracker', exc)
+    else:
+        notify(settings, 'info', 'Timeracker: success')
 
     # 2. Bugtracker
     try:
