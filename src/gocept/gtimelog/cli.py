@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import pkg_resources
 import gocept.gtimelog.collmex
 import gocept.gtimelog.timetracker
 import gocept.gtimelog.core
@@ -119,12 +120,15 @@ def main():
 
     # 1. Timetracker
     try:
+        os.system('osascript ' + pkg_resources.resource_filename('gocept.gtimelog', 'start_vpn.scpt'))
         timetracker = gocept.gtimelog.timetracker.Timetracker(settings)
         timetracker.report(window.all_entries())
     except Exception, exc:
         notify(settings, 'error', 'Error filling timetracker', exc)
     else:
         notify(settings, 'info', 'Timeracker: success')
+    finally:
+        os.system('osascript ' + pkg_resources.resource_filename('gocept.gtimelog', 'stop_vpn.scpt'))
 
     # 2. Bugtracker
     try:
