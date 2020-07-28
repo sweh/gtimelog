@@ -81,8 +81,44 @@ class Timetracker(object):
     def format_duration(self, duration):
         hours = duration.seconds / 3600
         minutes = (duration.seconds - hours * 3600) / 60
-        minutes = '{:02d}'.format(int(5 * round(minutes/5)))
+        minutes = '{:02d}'.format(int(5 * round(minutes/5.0)))
         return '%s:%sh' % (hours, minutes)
+
+    def _get_project(self, project):
+        result = None
+        for k in PROJECTS.keys():
+            if k.startswith(project):
+                if result is not None:
+                    raise ValueError(
+                        'Found multiple projects for %s: %s, %s' % (
+                            project, result, k
+                        )
+                    )
+                result = k
+        return PROJECTS[result]
+
+    def _get_project_title(self, project):
+        for k, v in PROJECTS.items():
+            if v == project:
+                return k
+
+    def _get_task(self, project, task):
+        result = None
+        for k in TASKS[project].keys():
+            if k.startswith(task):
+                if result is not None:
+                    raise ValueError(
+                        'Found multiple tasks for %s: %s, %s' % (
+                            task, result, k
+                        )
+                    )
+                result = k
+        return TASKS[project][result]
+
+    def _get_task_title(self, project, task):
+        for k, v in TASKS[project].items():
+            if v == task:
+                return k
 
     def report(self, entries):
         subjects = {}
@@ -158,8 +194,8 @@ class Timetracker(object):
         for act in bs.find_all('table')[-1].find_all('span'):
             ti_id = act.find_all('a')[0].attrs['href'].split('ti_id=')[1]
             data = act.find_all('td')
-            project = PROJECTS[data[1].text]
-            task = TASKS[project][data[2].text]
+            project = self._get_project(data[1].text)
+            task = self._get_task(project, data[2].text)
             duration = data[3].text
             date = data[6].text
             desc = data[11].text.strip()
@@ -187,8 +223,8 @@ class Timetracker(object):
 
     def mapEntry(self, entry):
         project, task, desc = entry.split(':')
-        project = PROJECTS[project.strip()]
-        return project, TASKS[project][task.strip()], desc.strip()
+        project = self._get_project(project.strip())
+        return project, self._get_task(project, task.strip()), desc.strip()
 
     def _get_invoice_flag(self, act):
         if act['task'] in ('6162', '5470'):
@@ -238,9 +274,11 @@ class Timetracker(object):
 
     def handle_error(self, act, msg, ti_id=''):
         msg = msg.strip()
-        msg = "%s [%s] [%s] %s %s '%s' -> %s" % (
-                ti_id, act['project'], act['task'], act['date'],
-                act['duration'], act['desc'], msg)
+        msg = "%s %s | %s: %s: %s -> %s (%s)" % (
+                act['date'], act['duration'],
+                self._get_project_title(act['project']),
+                self._get_task_title(act['project'], act['task']),
+                act['desc'], msg, ti_id)
         print msg
 
     def add_entry(self, s, act):
