@@ -15,9 +15,13 @@ PROJECTS = {
     'KRAVAG Online Portal': '4085',
     'Intern': '4018',
     'ClaimX (Produkt)': '3778',
+    'Logwin ClaimX': '4061',
 }
 
 TASKS = {
+    '4061': {
+        'Support Gesellschaften': '5380',
+    },
     '4085': {
         "Analyse, Konzeption": "6019",
         "Budget": "6324",
@@ -82,12 +86,15 @@ class Timetracker(object):
         hours = duration.seconds / 3600
         minutes = (duration.seconds - hours * 3600) / 60
         minutes = '{:02d}'.format(int(5 * round(minutes/5.0)))
+        if minutes == '60':
+            hours += 1
+            minutes = '00'
         return '%s:%sh' % (hours, minutes)
 
     def _get_project(self, project):
         result = None
         for k in PROJECTS.keys():
-            if k.startswith(project):
+            if k.lower().startswith(project.lower()):
                 if result is not None:
                     raise ValueError(
                         'Found multiple projects for %s: %s, %s' % (
@@ -99,13 +106,13 @@ class Timetracker(object):
 
     def _get_project_title(self, project):
         for k, v in PROJECTS.items():
-            if v == project:
+            if v.lower() == project.lower():
                 return k
 
     def _get_task(self, project, task):
         result = None
         for k in TASKS[project].keys():
-            if k.startswith(task):
+            if k.lower().startswith(task.lower()):
                 if result is not None:
                     raise ValueError(
                         'Found multiple tasks for %s: %s, %s' % (
@@ -113,11 +120,13 @@ class Timetracker(object):
                         )
                     )
                 result = k
+        if result is None:
+            raise ValueError('No task found for %s: %s:' % (project, task))
         return TASKS[project][result]
 
     def _get_task_title(self, project, task):
         for k, v in TASKS[project].items():
-            if v == task:
+            if v.lower() == task.lower():
                 return k
 
     def report(self, entries):

@@ -81,7 +81,7 @@ def main():
         '--day',
         metavar='YYYY-MM-DD',
         default=None,
-        help='Day of the week that should be uploaded. '
+        help='Day that should be uploaded. '
              '(default: last 7 days, including today)')
     parser.add_argument(
         '-d', '--debug',
@@ -97,10 +97,10 @@ def main():
 
     if args.day:
         day = datetime.datetime.strptime(args.day, '%Y-%m-%d').date()
-        window = timelog.weekly_window(day=day)
+        window = timelog.daily_window(day=day)
     else:
         begin = datetime.datetime.combine(
-            datetime.date.today() - datetime.timedelta(days=7),
+            datetime.date.today() - datetime.timedelta(days=1),
             timelog.virtual_midnight)
         end = datetime.datetime.combine(
             datetime.date.today() + datetime.timedelta(days=1),

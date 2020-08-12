@@ -457,6 +457,13 @@ class TimeLog(object):
         max = min + datetime.timedelta(7)
         return self.window_for(min, max)
 
+    def daily_window(self, day=None):
+        if not day:
+            day = self.day
+        min = datetime.datetime.combine(day, self.virtual_midnight)
+        max = min + datetime.timedelta(1)
+        return self.window_for(min, max)
+
     def pop(self):
         last = self.window.items[-1]
         f = open(self.filename, 'r')
