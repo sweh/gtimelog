@@ -13,14 +13,23 @@ log = logging.getLogger(__name__)
 
 PROJECTS = {
     'KRAVAG Online Portal': '4085',
+    'KRAVAG Zertifikatsportal': '4251',
     'Intern': '4018',
     'ClaimX (Produkt)': '3778',
+    'ClaimXMCI': '4073',
     'Logwin ClaimX': '4061',
 }
 
 TASKS = {
     '4061': {
         'Support Gesellschaften': '5380',
+    },
+    '4073': {
+        "Analyse, Abstimmung": "6019",
+        "Support": "6219",
+        "Einrichtung, Installation": "6171",
+        "Entwicklung": "6006",
+        "Review, Merge, Launch": "6072",
     },
     '4085': {
         "Analyse, Konzeption": "6019",
@@ -30,11 +39,13 @@ TASKS = {
         "Lizenzgebühren": "6403",
         "mySVG Interface": "6269",
         "Programmierung": "6156",
+        "R+V Reiserücktritt": "6471",
         "Review": "6312",
         "Support": "6162",
         "Transportdeklaration": "6285",
         "Transportschadenmeldung": "6266",
         "Zertifikatsportal": "6459",
+        "Unternehmenszertifikat": "6464",
     },
     '4018': {
         "Ausbildung": "5830",
@@ -66,6 +77,12 @@ TASKS = {
         "Support": "5470",
         "Testing": "6432",
         "Workshop, Schulung-/Vorbereit.": "5843",
+    },
+    '4251': {
+        "Entwicklung, Programmierung": "6467",
+        "Festpreis": "6466",
+        "Softwarepflege (Pauschale)": "6476",
+        "Support (kostenpflichtig)": "6475",
     },
 }
 
@@ -102,6 +119,8 @@ class Timetracker(object):
                         )
                     )
                 result = k
+        if result is None:
+            raise KeyError('No project found for %s' % project)
         return PROJECTS[result]
 
     def _get_project_title(self, project):
