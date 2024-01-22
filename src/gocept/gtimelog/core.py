@@ -535,6 +535,9 @@ class Settings(object):
     collmex_task_language = 'en'
     collmex_task_file = 'tasks.txt'
 
+    timetracker_username = ''
+    timetracker_password = ''
+
     redmines = []
     disabled_trackers = []
 
@@ -563,6 +566,10 @@ class Settings(object):
         config.set('collmex', 'password', self.collmex_password)
         config.set('collmex', 'task_language', self.collmex_task_language)
         config.set('collmex', 'task_file', self.collmex_task_file)
+
+        config.add_section('timetracker')
+        config.set('timetracker', 'username', self.timetracker_username)
+        config.set('timetracker', 'password', self.timetracker_password)
 
         return config
 
@@ -606,6 +613,9 @@ class Settings(object):
             'collmex', 'password'))
         self.collmex_task_language = config.get('collmex', 'task_language')
         self.collmex_task_file = config.get('collmex', 'task_file')
+
+        self.timetracker_username = config.get('timetracker', 'username')
+        self.timetracker_password = config.get('timetracker', 'password')
 
         for section in config.sections():
             if section.startswith('redmine'):

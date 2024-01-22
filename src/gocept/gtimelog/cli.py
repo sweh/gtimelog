@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import gocept.gtimelog.collmex
+import gocept.gtimelog.timetracker
 import gocept.gtimelog.core
 import gocept.gtimelog.redmine
 import logging
@@ -96,10 +97,10 @@ def main():
 
     if args.day:
         day = datetime.datetime.strptime(args.day, '%Y-%m-%d').date()
-        window = timelog.weekly_window(day=day)
+        window = timelog.daily_window(day=day)
     else:
         begin = datetime.datetime.combine(
-            datetime.date.today() - datetime.timedelta(days=7),
+            datetime.date.today(),
             timelog.virtual_midnight)
         end = datetime.datetime.combine(
             datetime.date.today() + datetime.timedelta(days=1),
@@ -108,14 +109,23 @@ def main():
     notify(settings, 'info', 'Uploading {} to {}'.format(
         window.min_timestamp, window.max_timestamp))
 
-    # 1. collmex
+    # 1. Timetracker
     try:
-        collmex = gocept.gtimelog.collmex.Collmex(settings)
-        collmex.report(window.all_entries())
+        timetracker = gocept.gtimelog.timetracker.Timetracker(settings)
+        timetracker.report(window.all_entries())
     except Exception as exc:
-        notify(settings, 'error', 'Error filling collmex', exc)
+        notify(settings, 'error', 'Error filling timetracker', exc)
     else:
-        notify(settings, 'info', 'Collmex: success')
+        notify(settings, 'info', 'Timeracker: success')
+
+    # 1. collmex
+    # try:
+    #     collmex = gocept.gtimelog.collmex.Collmex(settings)
+    #     collmex.report(window.all_entries())
+    # except Exception as exc:
+    #     notify(settings, 'error', 'Error filling collmex', exc)
+    # else:
+    #     notify(settings, 'info', 'Collmex: success')
 
     # 2. Bugtracker
     try:

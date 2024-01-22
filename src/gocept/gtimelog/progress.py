@@ -116,7 +116,7 @@ def main():
     if engagement:
         expected = engagement[today.month - 1]
         progress_expected = int(get_businessdays_until_now(
-            holidays=settings.holidays) * settings.hours)
+            holidays=settings.holidays or []) * settings.hours)
 
     print("Total work done this month: {colors.RED}{total_work} "
           "({total_percent} %){colors.BLACK} of "
@@ -144,7 +144,7 @@ def main():
         else:
             progress_engagement += int(
                 get_businessdays_until_now(
-                    holidays=settings.holidays) * settings.hours)
+                    holidays=settings.holidays or []) * settings.hours)
     engagement = sum(settings.engagement)
 
     print("Total work done this year:  {colors.RED}{total_work} "

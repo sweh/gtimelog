@@ -41,6 +41,7 @@ setup(
         'setuptools',
         'soupsieve < 2',  # PY2
         'transaction',
+        'requests',
         'zope.cachedescriptors',
         'pync'
     ],
