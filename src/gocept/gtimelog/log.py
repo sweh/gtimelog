@@ -3,6 +3,7 @@
 
 import argparse
 import gocept.gtimelog.cli
+import os
 import os.path
 
 
@@ -31,3 +32,7 @@ def download():
     tasks = gocept.gtimelog.collmex.TaskList(
         os.path.join(configdir, settings.collmex_task_file), settings)
     tasks.reload()
+
+
+def open_editor():
+    os.system("open -a MacVim.app ~/.gtimelog/timelog.txt")
