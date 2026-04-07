@@ -7,27 +7,77 @@ import gocept.gtimelog.core
 import gocept.gtimelog.bugtracker
 import logging
 import transaction
+import os
 from bs4 import BeautifulSoup
 
 log = logging.getLogger(__name__)
 
 
 PROJECTS = {
+    'Aktiv ClaimX': '3767',
     'KRAVAG Online Portal': '4085',
+    'Aktiv Kundenportal': '4286',
+    'KRAVAG-Sach Abschlussstrecke': '4314',
     'KRAVAG Zertifikatsportal': '4251',
     'Intern': '4018',
     'ClaimX (Produkt)': '3778',
     'ClaimXMCI': '4073',
+    'ClaimX Security': '4210',
     'Logwin ClaimX': '4061',
     'BTK ClaimX': '4180',
+    'BLG ClaimX': '4224',
     'Dokumentennotariat': '4270',
     'DEKRA ClaimX': '3933',
     'Cargoboard ClaimX': '6448',
     'Aktiv Assekuranz ClaimXMCI': '3777',
     'Kühne & Nagel ClaimX': '3939',
+    'KUSS Portal': '4297',
+    'WECOYA Bestandsführung': '4295',
+    'VW ClaimX': '4279',
+    'VOLKSWAGEN | CLAIMX (Bestellnummer 7200171357 vom 20.11.2024)': '4309',
+    'VERLOG ClaimX | MCI': '4277',
+
 }
 
 TASKS = {
+    '3767': {
+        'Support': '5436',
+    },
+    '4277': {
+        'Kundenspezifische Anpassungen': '6624',
+    },
+    '4309': {
+        'Dienstleistung - C3 Entwicklung Onshore': '6622',
+        'Support (kostenfrei)': '6660',
+    },
+    '4279': {
+        'Beratung / Schulung': '6558',
+        'Kostenpflichtiger Support': '6556',
+        'Kundenspezifische Anpassungen': '6557',
+        'Projektmanagement': '6562',
+        'Support': '6555',
+    },
+    '4286': {
+        'Entwicklung': '6574',
+        'Projektmanagement': '6575',
+    },
+    '4295': {
+        'Entwicklung': '6595',
+        'Projektmanagement': '6593',
+    },
+    '4314': {
+        'Entwicklung': '6637',
+    },
+    '4210': {
+        'Analyse, Projektmanagement': '6356',
+    },
+    '4297': {
+        'Beratung': '6599',
+    },
+    '4224': {
+        'Programmierung (Bestell-Nr. 4500168918)': '6389',
+        'Analyse, Projektmanagement (Bestell-Nr. 4500168918)': '6388',
+    },
     '3939': {
         'Support Niederlassungen': '5867',
     },
@@ -37,6 +87,7 @@ TASKS = {
     },
     '3777': {
         'Support': '5449',
+        'Anpassungen': '5579',
     },
     '6448': {
         'Support (kostenfrei)': '4246',
@@ -62,6 +113,7 @@ TASKS = {
         "Review, Merge, Launch": "6072",
     },
     '4085': {
+        "Ablösung Anmeldekontrolle": "6657",
         "Analyse, Konzeption": "6019",
         "Budget": "6324",
         "Domain / Fremdleistungen": "6441",
@@ -81,6 +133,7 @@ TASKS = {
     '4018': {
         "Ausbildung": "5830",
         "Bereitschaft": "6561",
+        "Betrieb und Infrastruktur": "6583",
         "Buchhaltung": "6167",
         "Dokumentation": "5640",
         "Feiertag": "6424",
@@ -88,10 +141,11 @@ TASKS = {
         "Installation und Einrichtung": "5639",
         "ISO 27001 - ISMS": "5411",
         "Krankheit, Arztbesuch": "5544",
-        "Meeting, Workshop": "5641",
+        "Meeting, Daily, Workshop": "5641",
         "Personal": "6166",
         "Planung": "6045",
         "Programmierung intern": "5694",
+        "Support / Hilfsarbeiten": "6581",
         "Schulung, Workshop": "6111",
         "Software-Testing": "6431",
         "Urlaub": "5642",
@@ -233,7 +287,8 @@ class Timetracker(object):
                     ))
 
         s = requests.Session()
-        basic = HTTPBasicAuth('timetracker', 'FrupBamNiHykCejTuedvelRanFegBaj3')
+        pwd = os.environ.get('TIMETRACKER_PASSWORD')
+        basic = HTTPBasicAuth('timetracker', pwd)
         s.post(
             'https://timetracker.risclog.de/@@login',
             data={
@@ -301,7 +356,10 @@ class Timetracker(object):
                 self.update_entry(s, act, existing_id, basic)
 
     def mapEntry(self, entry):
-        project, task, desc = entry.split(':')
+        try:
+            project, task, desc = entry.split(':')
+        except ValueError:
+            import pdb; pdb.set_trace()  # XXXXXXXXXX 
         project = self._get_project(project.strip())
         return project, self._get_task(project, task.strip()), desc.strip()
 

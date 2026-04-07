@@ -97,7 +97,13 @@ def main():
 
     if args.day:
         day = datetime.datetime.strptime(args.day, '%Y-%m-%d').date()
-        window = timelog.daily_window(day=day)
+        begin = datetime.datetime.combine(
+            day,
+            timelog.virtual_midnight)
+        end = datetime.datetime.combine(
+            day + datetime.timedelta(days=1),
+            timelog.virtual_midnight)
+        window = timelog.window_for(begin, end)
     else:
         begin = datetime.datetime.combine(
             datetime.date.today(),
