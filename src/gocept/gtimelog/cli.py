@@ -1,6 +1,5 @@
 import argparse
 import datetime
-import gocept.gtimelog.collmex
 import gocept.gtimelog.timetracker
 import gocept.gtimelog.core
 import gocept.gtimelog.redmine
