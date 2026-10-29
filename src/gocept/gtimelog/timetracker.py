@@ -71,8 +71,9 @@ class Timetracker(object):
 
     def _get_project(self, project):
         result = None
-        if project == 'ClaimX:mci (Produkt)':
-            project = 'ClaimXMCI'
+        if project == 'ClaimXMCI':
+            # the real name contains a colon, which is the timelog separator
+            project = 'ClaimX:mci (Produkt)'
         for k in self.PROJECTS:
             if k.lower() == project.lower():
                 return self.PROJECTS[k]
@@ -121,7 +122,8 @@ class Timetracker(object):
             if v.lower() == task.lower():
                 return k
 
-    def report(self, entries):
+    def report(self, entries, dirty=False):
+        """Upload entries; with dirty=True only print what would be done."""
         subjects = {}
         activities = []
         for start, stop, duration, entry in entries:
@@ -184,10 +186,16 @@ class Timetracker(object):
 
         s.post(
             'https://timetracker.risclog.de/times/@@index',
-            data={
-                'form.t_date': '2532170f2a682b35bbcaddc088ed1e72',
-                'form.t_filter': 'die letzten 31 Tage',
-                'form.t_user': '33e75ff09dd601bbe69f351039152189'
+            files={
+                'form.t_date': (None, '2532170f2a682b35bbcaddc088ed1e72'),
+                'form.t_date-empty-marker': (None, '1'),
+                'form.t_filter': (None, 'die letzten 31 Tage'),
+                'form.t_filter-empty-marker': (None, '1'),
+                'form.t_user': (None, '33e75ff09dd601bbe69f351039152189'),
+                'form.t_user-empty-marker': (None, '1'),
+                # Without the submit button the filter is not applied.
+                'form.actions.46696c74657220616e77656e64656e': (
+                    None, 'Filter anwenden'),
             },
             auth=basic
         )
@@ -196,10 +204,17 @@ class Timetracker(object):
             'https://timetracker.risclog.de/times/@@index',
             auth=basic
         )
+        resp.raise_for_status()
         bs = BeautifulSoup(resp.text, features="html.parser")
 
         existacts = {}
-        for act in bs.find_all('table')[-1].find_all('span'):
+        tables = bs.find_all('table')
+        if not tables and bs.find('input', attrs={'type': 'password'}):
+            raise RuntimeError(
+                'Timetracker login failed, check username/password.')
+        # No table means there are no existing entries in the filter range.
+        spans = tables[-1].find_all('span') if tables else []
+        for act in spans:
             ti_id = act.find_all('a')[0].attrs['href'].split('ti_id=')[1]
             data = act.find_all('td')
             project = self._get_project(data[1].text)
@@ -233,11 +248,28 @@ class Timetracker(object):
                 else:
                     existing_id = existing_ids[0]
                     for id_ in existing_ids[1:]:
-                        self.set_duplicate(s, act, id_, basic)
+                        if dirty:
+                            print(self._describe('DUPLICATE', act, id_))
+                        else:
+                            self.set_duplicate(s, act, id_, basic)
             except KeyError:
-                self.add_entry(s, act, basic)
+                if dirty:
+                    print(self._describe('NEW', act))
+                else:
+                    self.add_entry(s, act, basic)
             else:
-                self.update_entry(s, act, existing_id, basic)
+                if dirty:
+                    print(self._describe('UPDATE', act, existing_id))
+                else:
+                    self.update_entry(s, act, existing_id, basic)
+
+    def _describe(self, action, act, ti_id=None):
+        project_title = self._get_project_title(act['project'])
+        task_title = self._get_task_title(act['project'], act['task'])
+        return '%-9s %s %s (%s) / %s (%s) %s  %s%s' % (
+            action, act['date'], project_title, act['project'],
+            task_title, act['task'], act['duration'], act['desc'],
+            ' [ti_id=%s]' % ti_id if ti_id else '')
 
     def annotate_entry(self, entry):
         """Append the project and task ids in parentheses to an entry.

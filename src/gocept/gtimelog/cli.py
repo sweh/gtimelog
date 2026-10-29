@@ -87,6 +87,11 @@ def main():
         help='Enable debug logging',
         action='store_const',
         const=True)
+    parser.add_argument(
+        '--dirty',
+        help='Dry run: only print which Timetracker entries would be '
+             'created or updated, upload nothing',
+        action='store_true')
     args = parser.parse_args()
 
     configure_logging(debug=args.debug)
@@ -117,11 +122,14 @@ def main():
     # 1. Timetracker
     try:
         timetracker = gocept.gtimelog.timetracker.Timetracker(settings)
-        timetracker.report(window.all_entries())
+        timetracker.report(window.all_entries(), dirty=args.dirty)
     except Exception as exc:
         notify(settings, 'error', 'Error filling timetracker', exc)
     else:
         notify(settings, 'info', 'Timeracker: success')
+
+    if args.dirty:
+        return
 
     # 1. collmex
     # try:
