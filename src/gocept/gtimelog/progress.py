@@ -9,6 +9,7 @@ from gocept.gtimelog.util import format_duration_long
 import argparse
 import gocept.gtimelog.cli
 import gocept.gtimelog.core
+import gocept.gtimelog.timetracker
 import gocept.gtimelog.util
 import sys
 
@@ -88,7 +89,8 @@ def main():
 
     today_window = timelog.window_for(today, today + timedelta(1))
     today_window.daily_report_timeline(
-        sys.stdout, settings.email, settings.name)
+        sys.stdout, settings.email, settings.name,
+        gocept.gtimelog.timetracker.Timetracker(settings).annotate_entry)
 
     total_work, total_slacking, total_holidays = (
         timelog.window_for(monday, sunday).totals())

@@ -37,6 +37,7 @@ setup(
     install_requires=[
         'beautifulSoup4',
         'gocept.collmex>=1.2',
+        'psycopg2-binary',
         'pyactiveresource>=2.1',
         'setuptools',
         'soupsieve < 2',  # PY2

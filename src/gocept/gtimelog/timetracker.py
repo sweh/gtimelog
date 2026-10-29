@@ -13,194 +13,25 @@ from bs4 import BeautifulSoup
 log = logging.getLogger(__name__)
 
 
-PROJECTS = {
-    'Aktiv ClaimX': '3767',
-    'KRAVAG Online Portal': '4085',
-    'Aktiv Kundenportal': '4286',
-    'KRAVAG-Sach Abschlussstrecke': '4314',
-    'KRAVAG Zertifikatsportal': '4251',
-    'Intern': '4018',
-    'ClaimX (Produkt)': '3778',
-    'ClaimX 2.0 (Produkt)': '4195',
-    'ClaimXMCI': '4073',
-    'ClaimX Security': '4210',
-    'Logwin ClaimX': '4061',
-    'BTK ClaimX': '4180',
-    'BLG ClaimX': '4224',
-    'Dokumentennotariat': '4270',
-    'DEKRA ClaimX': '3933',
-    'Cargoboard ClaimX': '6448',
-    'Aktiv Assekuranz ClaimXMCI': '3777',
-    'Kühne & Nagel ClaimX': '3939',
-    'KUSS Portal': '4297',
-    'WECOYA Bestandsführung': '4295',
-    'WECOYA MARINE': '4082',
-    'VW ClaimX': '4279',
-    'VWFS | CLAIMX': '4309',
-    'VWFS | Kundenportal': '4330',
-    'VWFS | Partnerportal': '4331',
-    'VERLOG ClaimX | MCI': '4277',
-    'Dachser ClaimX': '4030',
-    'Hellmann ClaimX': '4132',
-    '(CL) Cargoline ClaimX': '3870',
+def load_mapping(dsn):
+    """Load projects and subprojects from the ttdata postgres database.
 
-}
-
-TASKS = {
-    '3870': {
-        'Support': '5439',
-    },
-    '4132': {
-        'Support': '6337',
-    },
-    '4030': {
-        'Support': '5803',
-    },
-    '4082': {
-        'CLAIMX - Kundenspezifische Anpassungen': '6544',
-    },
-    '4195': {
-        'Analyse': '6308',
-        'Entwicklung': '6419',
-    },
-    '3767': {
-        'Support': '5436',
-    },
-    '4277': {
-        'Kundenspezifische Anpassungen': '6624',
-    },
-    '4309': {
-        'CLAIMX | Entwicklung (remote)': '6696',
-        'CLAIMX | riscLOG Fehler / Aufwand zu klären': '6697',
-    },
-    '4330': {
-        'Kundenportal | Entwicklung (remote)': '6682',
-    },
-    '4331': {
-        'Partnerportal | Entwicklung': '6688',
-    }
-    '4279': {
-        'Beratung / Schulung': '6558',
-        'Kostenpflichtiger Support': '6556',
-        'Kundenspezifische Anpassungen': '6557',
-        'Projektmanagement': '6562',
-        'Support': '6555',
-    },
-    '4286': {
-        'Entwicklung': '6574',
-        'Projektmanagement': '6575',
-    },
-    '4295': {
-        'Entwicklung': '6595',
-        'Projektmanagement': '6593',
-    },
-    '4314': {
-        'Entwicklung': '6637',
-    },
-    '4210': {
-        'Analyse, Projektmanagement': '6356',
-    },
-    '4297': {
-        'Beratung': '6599',
-    },
-    '4224': {
-        'Programmierung (Bestell-Nr. 4500168918)': '6389',
-        'Analyse, Projektmanagement (Bestell-Nr. 4500168918)': '6388',
-    },
-    '3939': {
-        'Support Niederlassungen': '5867',
-    },
-    '3933': {
-        'Albis': '5395',
-        'Support (kostenfrei)': '5796',
-    },
-    '3777': {
-        'Support': '5449',
-        'Anpassungen': '5579',
-    },
-    '6448': {
-        'Support (kostenfrei)': '4246',
-    },
-    '4270': {
-        'Entwicklung, Test': '6516',
-        'Infrastruktur, Deployment, Monitoring': '6517',
-        'Konzeption, Planung': '6515',
-        'Projektmanagement': '6514',
-    },
-    '4180': {
-        'Schnittstellen': '6278',
-        'Support': '6272',
-    },
-    '4061': {
-        'Support Gesellschaften': '5380',
-    },
-    '4073': {
-        "Analyse, Abstimmung": "6019",
-        "Support": "6219",
-        "Einrichtung, Installation": "6171",
-        "Entwicklung": "6006",
-        "Review, Merge, Launch": "6072",
-    },
-    '4085': {
-        "Ablösung Anmeldekontrolle": "6657",
-        "Analyse, Konzeption": "6019",
-        "Budget": "6324",
-        "Domain / Fremdleistungen": "6441",
-        "Funktionserweiterungen Vertrieb": "6268",
-        "Lizenzgebühren": "6403",
-        "mySVG Interface": "6269",
-        "Programmierung": "6156",
-        "R+V Reiserücktritt": "6471",
-        "Meldebogen": "6567",
-        "Review": "6312",
-        "Support": "6162",
-        "Transportdeklaration": "6285",
-        "Transportschadenmeldung": "6266",
-        "Zertifikatsportal": "6459",
-        "Unternehmenszertifikat": "6464",
-    },
-    '4018': {
-        "Ausbildung": "5830",
-        "Bereitschaft": "6561",
-        "Betrieb und Infrastruktur": "6583",
-        "Buchhaltung": "6167",
-        "Dokumentation": "5640",
-        "Feiertag": "6424",
-        "Forschung und Entwicklung": "5665",
-        "Installation und Einrichtung": "5639",
-        "ISO 27001 - ISMS": "5411",
-        "Krankheit, Arztbesuch": "5544",
-        "Meeting, Daily, Workshop": "5641",
-        "Personal": "6166",
-        "Planung": "6045",
-        "Programmierung intern": "5694",
-        "Support / Hilfsarbeiten": "6581",
-        "Schulung, Workshop": "6111",
-        "Software-Testing": "6431",
-        "Urlaub": "5642",
-        "Vertrieb": "6589",
-        "Verwaltung": "5545",
-    },
-    '3778': {
-        "Analyse, Abstimmung": "5819",
-        "Anpassungen und Erweiterungen": "5581",
-        "Dokumentation": "5543",
-        "Fehlerbehebung": "6456",
-        "Migration 2.13": "6054",
-        "Modernisierung": "6454",
-        "Monitoring": "6453",
-        "Sourcencheck, Merge": "5506",
-        "Support": "5470",
-        "Testing": "6432",
-        "Workshop, Schulung-/Vorbereit.": "5843",
-    },
-    '4251': {
-        "Entwicklung, Programmierung": "6467",
-        "Festpreis": "6466",
-        "Softwarepflege (Pauschale)": "6476",
-        "Support (kostenpflichtig)": "6475",
-    },
-}
+    Returns (PROJECTS, TASKS): {project name: p_id} and
+    {p_id: {subproject name: s_id}}, ids as strings.
+    """
+    import psycopg2
+    conn = psycopg2.connect(dsn)
+    try:
+        cur = conn.cursor()
+        cur.execute('SELECT name, p_id FROM projects')
+        projects = {name: str(p_id) for name, p_id in cur.fetchall()}
+        cur.execute('SELECT pid, name, s_id FROM subprojects')
+        tasks = {}
+        for pid, name, s_id in cur.fetchall():
+            tasks.setdefault(str(pid), {})[name] = str(s_id)
+    finally:
+        conn.close()
+    return projects, tasks
 
 
 class Project(object):
@@ -214,6 +45,20 @@ class Timetracker(object):
     def __init__(self, settings):
         self.settings = settings
         self.trackers = gocept.gtimelog.bugtracker.Bugtrackers(self.settings)
+        self._mapping = None
+
+    @property
+    def PROJECTS(self):
+        return self._load()[0]
+
+    @property
+    def TASKS(self):
+        return self._load()[1]
+
+    def _load(self):
+        if self._mapping is None:
+            self._mapping = load_mapping(self.settings.timetracker_dsn)
+        return self._mapping
 
     def format_duration(self, duration):
         hours = int(duration.seconds / 3600)
@@ -228,7 +73,10 @@ class Timetracker(object):
         result = None
         if project == 'ClaimX:mci (Produkt)':
             project = 'ClaimXMCI'
-        for k in list(PROJECTS.keys()):
+        for k in self.PROJECTS:
+            if k.lower() == project.lower():
+                return self.PROJECTS[k]
+        for k in list(self.PROJECTS.keys()):
             if k.lower().startswith(project.lower()):
                 if result is not None:
                     raise ValueError(
@@ -239,31 +87,37 @@ class Timetracker(object):
                 result = k
         if result is None:
             raise KeyError('No project found for %s' % project)
-        return PROJECTS[result]
+        return self.PROJECTS[result]
 
     def _get_project_title(self, project):
-        for k, v in list(PROJECTS.items()):
+        for k, v in list(self.PROJECTS.items()):
             if v.lower() == project.lower():
                 return k
 
+    def _find_tasks(self, project, task):
+        """Return {title: id}; prefix matches win over substring matches."""
+        task = task.strip().lower()
+        tasks = self.TASKS.get(project, {})
+        for match in (str.__eq__, str.startswith, str.__contains__):
+            found = {k: v for k, v in tasks.items()
+                     if match(k.lower(), task)}
+            if found:
+                return found
+        return {}
+
     def _get_task(self, project, task):
-        result = None
-        for k in list(TASKS[project].keys()):
-            if k.lower().startswith(task.lower()):
-                if result is not None:
-                    raise ValueError(
-                        'Found multiple tasks for %s: %s, %s' % (
-                            task, result, k
-                        )
-                    )
-                result = k
-        if result is None:
+        found = self._find_tasks(project, task)
+        if len(found) > 1:
+            raise ValueError(
+                'Found multiple tasks for %s: %s' % (
+                    task, ', '.join(sorted(found))))
+        if not found:
             import pdb; pdb.set_trace()  # XXXXXXXXXX 
             raise ValueError('No task found for %s: %s:' % (project, task))
-        return TASKS[project][result]
+        return list(found.values())[0]
 
     def _get_task_title(self, project, task):
-        for k, v in list(TASKS[project].items()):
+        for k, v in list(self.TASKS[project].items()):
             if v.lower() == task.lower():
                 return k
 
@@ -384,6 +238,25 @@ class Timetracker(object):
                 self.add_entry(s, act, basic)
             else:
                 self.update_entry(s, act, existing_id, basic)
+
+    def annotate_entry(self, entry):
+        """Append the project and task ids in parentheses to an entry.
+
+        Returns the entry unchanged if it cannot be mapped.
+        """
+        parts = entry.split(':')
+        if len(parts) != 3:
+            return entry
+        project, task, desc = parts
+        try:
+            project_id = self._get_project(project.strip())
+            matches = list(self._find_tasks(project_id, task).values())
+        except Exception:
+            return entry
+        if len(matches) != 1:
+            return entry
+        return '%s (%s):%s (%s):%s' % (
+            project.strip(), project_id, task.rstrip(), matches[0], desc)
 
     def mapEntry(self, entry):
         try:

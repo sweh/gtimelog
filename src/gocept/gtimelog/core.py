@@ -286,7 +286,8 @@ class TimeWindow(object):
         print(("Time spent slacking: %s" %
                format_duration_long(total_slacking)), file=output)
 
-    def daily_report_timeline(self, output, email, who):
+    def daily_report_timeline(self, output, email, who,
+                              format_entry=lambda entry: entry):
         """Format a daily report with your timeline entries."""
         # Locale is set as a side effect of 'import gtk', so strftime('%a')
         # would give us translated names
@@ -306,7 +307,7 @@ class TimeWindow(object):
         for start, stop, duration, entry in items[1:]:
             print("%s - %s (%3s): %s" % (
                 start.strftime('%H:%M'), stop.strftime('%H:%M'),
-                duration.seconds // 60, entry), file=output)
+                duration.seconds // 60, format_entry(entry)), file=output)
         now = datetime.datetime.now()
         if stop.date() == now.date():
             print("%s - %s (%3d): **current task**" % (
@@ -537,6 +538,7 @@ class Settings(object):
 
     timetracker_username = ''
     timetracker_password = ''
+    timetracker_dsn = 'dbname=ttdata'
 
     redmines = []
     disabled_trackers = []
@@ -570,6 +572,7 @@ class Settings(object):
         config.add_section('timetracker')
         config.set('timetracker', 'username', self.timetracker_username)
         config.set('timetracker', 'password', self.timetracker_password)
+        config.set('timetracker', 'dsn', self.timetracker_dsn)
 
         return config
 
@@ -616,6 +619,8 @@ class Settings(object):
 
         self.timetracker_username = config.get('timetracker', 'username')
         self.timetracker_password = config.get('timetracker', 'password')
+        if config.has_option('timetracker', 'dsn'):
+            self.timetracker_dsn = config.get('timetracker', 'dsn')
 
         for section in config.sections():
             if section.startswith('redmine'):
