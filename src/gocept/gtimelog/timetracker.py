@@ -21,6 +21,7 @@ PROJECTS = {
     'KRAVAG Zertifikatsportal': '4251',
     'Intern': '4018',
     'ClaimX (Produkt)': '3778',
+    'ClaimX 2.0 (Produkt)': '4195',
     'ClaimXMCI': '4073',
     'ClaimX Security': '4210',
     'Logwin ClaimX': '4061',
@@ -33,13 +34,35 @@ PROJECTS = {
     'Kühne & Nagel ClaimX': '3939',
     'KUSS Portal': '4297',
     'WECOYA Bestandsführung': '4295',
+    'WECOYA MARINE': '4082',
     'VW ClaimX': '4279',
-    'VOLKSWAGEN | CLAIMX (Bestellnummer 7200171357 vom 20.11.2024)': '4309',
+    'VWFS | CLAIMX': '4309',
+    'VWFS | Kundenportal': '4330',
+    'VWFS | Partnerportal': '4331',
     'VERLOG ClaimX | MCI': '4277',
+    'Dachser ClaimX': '4030',
+    'Hellmann ClaimX': '4132',
+    '(CL) Cargoline ClaimX': '3870',
 
 }
 
 TASKS = {
+    '3870': {
+        'Support': '5439',
+    },
+    '4132': {
+        'Support': '6337',
+    },
+    '4030': {
+        'Support': '5803',
+    },
+    '4082': {
+        'CLAIMX - Kundenspezifische Anpassungen': '6544',
+    },
+    '4195': {
+        'Analyse': '6308',
+        'Entwicklung': '6419',
+    },
     '3767': {
         'Support': '5436',
     },
@@ -47,9 +70,15 @@ TASKS = {
         'Kundenspezifische Anpassungen': '6624',
     },
     '4309': {
-        'Dienstleistung - C3 Entwicklung Onshore': '6622',
-        'Support (kostenfrei)': '6660',
+        'CLAIMX | Entwicklung (remote)': '6696',
+        'CLAIMX | riscLOG Fehler / Aufwand zu klären': '6697',
     },
+    '4330': {
+        'Kundenportal | Entwicklung (remote)': '6682',
+    },
+    '4331': {
+        'Partnerportal | Entwicklung': '6688',
+    }
     '4279': {
         'Beratung / Schulung': '6558',
         'Kostenpflichtiger Support': '6556',
@@ -149,6 +178,7 @@ TASKS = {
         "Schulung, Workshop": "6111",
         "Software-Testing": "6431",
         "Urlaub": "5642",
+        "Vertrieb": "6589",
         "Verwaltung": "5545",
     },
     '3778': {
