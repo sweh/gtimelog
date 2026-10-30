@@ -15,6 +15,9 @@ Backwards incompatible changes
 Features
 ++++++++
 
+- ``gtl-progress`` turns ticket numbers (``#123``) into terminal hyperlinks
+  to ``https://redmine.risclog.com/issues/123``.
+
 - Add support for Python 3.7, 3.8, 3.9.
 
 - Add ability to start the name of a bugtracker in ``gtimelogrc`` with

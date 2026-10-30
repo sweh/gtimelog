@@ -11,6 +11,7 @@ import gocept.gtimelog.cli
 import gocept.gtimelog.core
 import gocept.gtimelog.timetracker
 import gocept.gtimelog.util
+import re
 import sys
 
 
@@ -34,6 +35,20 @@ class WithoutColors(object):
 
 # This is just the fallback, it can be configured via gtimlogrc.
 HOLIDAYS = []
+
+
+TICKET_URL = 'https://redmine.risclog.com/issues/%s'
+TICKET_RE = re.compile(r'#(\d+)')
+
+
+def link_tickets(text):
+    """Turn ticket numbers like #123 into terminal hyperlinks (OSC 8)."""
+    if not sys.stdout.isatty():
+        return text
+    return TICKET_RE.sub(
+        lambda m: '\033]8;;%s\033\\%s\033]8;;\033\\' % (
+            TICKET_URL % m.group(1), m.group(0)),
+        text)
 
 
 def get_businessdays_until_now(holidays=HOLIDAYS):
@@ -88,9 +103,10 @@ def main():
         settings, timelog, (monday, sunday))
 
     today_window = timelog.window_for(today, today + timedelta(1))
+    annotate = gocept.gtimelog.timetracker.Timetracker(settings).annotate_entry
     today_window.daily_report_timeline(
         sys.stdout, settings.email, settings.name,
-        gocept.gtimelog.timetracker.Timetracker(settings).annotate_entry)
+        lambda entry: link_tickets(annotate(entry)))
 
     total_work, total_slacking, total_holidays = (
         timelog.window_for(monday, sunday).totals())
