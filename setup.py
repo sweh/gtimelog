@@ -1,7 +1,7 @@
 # Copyright (c) 2009-2012 gocept gmbh & co. kg
 # See also LICENSE.txt
 
-from setuptools import find_packages
+from setuptools import find_namespace_packages
 from setuptools import setup
 import os.path
 
@@ -19,9 +19,8 @@ setup(
     url='https://github.com/gocept/gocept.gtimelog',
     author='gocept gmbh & co. kg',
     author_email='mail@gocept.com',
-    packages=find_packages('src'),
+    packages=find_namespace_packages('src'),
     package_dir={'': 'src'},
-    namespace_packages=['gocept'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: GNU General Public License (GPL)',
