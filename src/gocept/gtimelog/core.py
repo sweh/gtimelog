@@ -538,7 +538,15 @@ class Settings(object):
 
     timetracker_username = ''
     timetracker_password = ''
-    timetracker_dsn = 'dbname=ttdata'
+    # Without a DSN projects and tasks are read from the timetracker form.
+    timetracker_dsn = ''
+    timetracker_url = 'https://timetracker.risclog.de'
+    timetracker_basic_username = 'timetracker'
+    # Falls back to the TIMETRACKER_PASSWORD environment variable.
+    timetracker_basic_password = ''
+    # Ids of the filter used to read the existing entries (user specific).
+    timetracker_filter_date = '2532170f2a682b35bbcaddc088ed1e72'
+    timetracker_filter_user = '33e75ff09dd601bbe69f351039152189'
 
     redmines = []
     disabled_trackers = []
@@ -573,6 +581,15 @@ class Settings(object):
         config.set('timetracker', 'username', self.timetracker_username)
         config.set('timetracker', 'password', self.timetracker_password)
         config.set('timetracker', 'dsn', self.timetracker_dsn)
+        config.set('timetracker', 'url', self.timetracker_url)
+        config.set(
+            'timetracker', 'basic_username', self.timetracker_basic_username)
+        config.set(
+            'timetracker', 'basic_password', self.timetracker_basic_password)
+        config.set(
+            'timetracker', 'filter_date', self.timetracker_filter_date)
+        config.set(
+            'timetracker', 'filter_user', self.timetracker_filter_user)
 
         return config
 
@@ -619,8 +636,12 @@ class Settings(object):
 
         self.timetracker_username = config.get('timetracker', 'username')
         self.timetracker_password = config.get('timetracker', 'password')
-        if config.has_option('timetracker', 'dsn'):
-            self.timetracker_dsn = config.get('timetracker', 'dsn')
+        for option in ('dsn', 'url', 'basic_username', 'basic_password',
+                       'filter_date',
+                       'filter_user'):
+            if config.has_option('timetracker', option):
+                setattr(self, 'timetracker_' + option,
+                        config.get('timetracker', option))
 
         for section in config.sections():
             if section.startswith('redmine'):

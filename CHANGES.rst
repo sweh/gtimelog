@@ -15,6 +15,17 @@ Backwards incompatible changes
 Features
 ++++++++
 
+- Timetracker upload: ask the timetracker (``times/set_invoice``) whether the
+  invoice checkbox is set instead of using hard-coded ids; round durations
+  up to 5 minutes; validate entries; recognize the success message and
+  report HTTP errors, failed logins and expired sessions; replace
+  ``pdb`` breakpoints by exceptions.
+
+- Timetracker: ``url``, ``basic_username``, ``basic_password``, ``filter_date`` and
+  ``filter_user`` can be set in the ``[timetracker]`` section. Without
+  ``dsn`` projects and tasks are read from the timetracker form instead of
+  the database. The unneeded ``form.project.data`` field is not sent anymore.
+
 - ``gtl-progress`` turns ticket numbers (``#123``) into terminal hyperlinks
   to ``https://redmine.risclog.com/issues/123``.
 

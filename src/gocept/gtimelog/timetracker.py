@@ -1,6 +1,7 @@
 # encoding=utf-8
 
 import datetime
+import math
 import requests
 from requests.auth import HTTPBasicAuth
 import gocept.gtimelog.core
@@ -11,6 +12,8 @@ import os
 from bs4 import BeautifulSoup
 
 log = logging.getLogger(__name__)
+
+SUCCESS_MESSAGE = 'Die Zeit wurde erfolgreich erfasst.'
 
 
 def load_mapping(dsn):
@@ -34,6 +37,27 @@ def load_mapping(dsn):
     return projects, tasks
 
 
+def load_mapping_from_form(doc):
+    """Read projects and subprojects from the 'times/add' form.
+
+    Returns the same structure as `load_mapping`.
+    """
+    projects = {}
+    tasks = {}
+    select = doc.find('select', attrs={'name': 'form.project.data'})
+    for group in (select.find_all('optgroup') if select else []):
+        p_id = (group.get('title') or '').strip()
+        if not p_id:
+            continue
+        projects[(group.get('label') or p_id).strip()] = p_id
+        tasks[p_id] = {
+            option.text.strip(): option['value']
+            for option in group.find_all('option') if option.get('value')}
+    if not projects:
+        raise RuntimeError('Timetracker did not return a project form.')
+    return projects, tasks
+
+
 class Project(object):
 
     def __init__(self, name):
@@ -46,6 +70,8 @@ class Timetracker(object):
         self.settings = settings
         self.trackers = gocept.gtimelog.bugtracker.Bugtrackers(self.settings)
         self._mapping = None
+        self._connection = None
+        self._invoice_cache = {}
 
     @property
     def PROJECTS(self):
@@ -57,17 +83,58 @@ class Timetracker(object):
 
     def _load(self):
         if self._mapping is None:
-            self._mapping = load_mapping(self.settings.timetracker_dsn)
+            if self.settings.timetracker_dsn:
+                self._mapping = load_mapping(self.settings.timetracker_dsn)
+            else:
+                s, basic = self._connect()
+                resp = s.get(self._url('/times/add'), auth=basic)
+                resp.raise_for_status()
+                self._mapping = load_mapping_from_form(
+                    BeautifulSoup(resp.text, features='html.parser'))
         return self._mapping
 
+    def _url(self, path):
+        return self.settings.timetracker_url.rstrip('/') + path
+
+    def _connect(self):
+        """Log in once and return (session, basic auth)."""
+        if self._connection is not None:
+            return self._connection
+        pwd = (self.settings.timetracker_basic_password or
+               os.environ.get('TIMETRACKER_PASSWORD'))
+        if not pwd:
+            raise RuntimeError(
+                'Set basic_password in the [timetracker] section of '
+                'gtimelogrc or the TIMETRACKER_PASSWORD environment '
+                'variable.')
+        basic = HTTPBasicAuth(self.settings.timetracker_basic_username, pwd)
+        s = requests.Session()
+        resp = s.post(
+            self._url('/@@login'),
+            data={
+                'form.login': self.settings.timetracker_username,
+                'form.password': self.settings.timetracker_password,
+                'form.camefrom': '/tasks/add',
+                'form.actions.login': 'login',
+            },
+            auth=basic)
+        resp.raise_for_status()
+        if self._has_login_form(BeautifulSoup(
+                resp.text, features='html.parser')):
+            raise RuntimeError(
+                'Timetracker login failed, check username/password.')
+        self._connection = s, basic
+        return self._connection
+
+    @staticmethod
+    def _has_login_form(doc):
+        return bool(doc.find('input', attrs={'type': 'password'}) or
+                    doc.find(attrs={'name': 'form.password'}))
+
     def format_duration(self, duration):
-        hours = int(duration.seconds / 3600)
-        minutes = int((duration.seconds - hours * 3600) / 60)
-        minutes = '{:02d}'.format(int(5 * round(minutes/5.0)))
-        if minutes == '60':
-            hours += 1
-            minutes = '00'
-        return '%s:%sh' % (hours, minutes)
+        """Format as H:MMh, always rounding up to the next 5 minutes."""
+        minutes = int(math.ceil(duration.total_seconds() / 300.0 - 1e-9)) * 5
+        return '%s:%02dh' % (minutes // 60, minutes % 60)
 
     def _get_project(self, project):
         result = None
@@ -113,7 +180,6 @@ class Timetracker(object):
                 'Found multiple tasks for %s: %s' % (
                     task, ', '.join(sorted(found))))
         if not found:
-            import pdb; pdb.set_trace()  # XXXXXXXXXX 
             raise ValueError('No task found for %s: %s:' % (project, task))
         return list(found.values())[0]
 
@@ -172,26 +238,16 @@ class Timetracker(object):
                     orig_duration=duration,
                     ))
 
-        s = requests.Session()
-        pwd = os.environ.get('TIMETRACKER_PASSWORD')
-        basic = HTTPBasicAuth('timetracker', pwd)
-        s.post(
-            'https://timetracker.risclog.de/@@login',
-            data={
-                'form.login': self.settings.timetracker_username,
-                'form.password': self.settings.timetracker_password
-            },
-            auth=basic
-        )
+        s, basic = self._connect()
 
         s.post(
-            'https://timetracker.risclog.de/times/@@index',
+            self._url('/times/@@index'),
             files={
-                'form.t_date': (None, '2532170f2a682b35bbcaddc088ed1e72'),
+                'form.t_date': (None, self.settings.timetracker_filter_date),
                 'form.t_date-empty-marker': (None, '1'),
                 'form.t_filter': (None, 'die letzten 31 Tage'),
                 'form.t_filter-empty-marker': (None, '1'),
-                'form.t_user': (None, '33e75ff09dd601bbe69f351039152189'),
+                'form.t_user': (None, self.settings.timetracker_filter_user),
                 'form.t_user-empty-marker': (None, '1'),
                 # Without the submit button the filter is not applied.
                 'form.actions.46696c74657220616e77656e64656e': (
@@ -200,10 +256,7 @@ class Timetracker(object):
             auth=basic
         )
 
-        resp = s.get(
-            'https://timetracker.risclog.de/times/@@index',
-            auth=basic
-        )
+        resp = s.get(self._url('/times/@@index'), auth=basic)
         resp.raise_for_status()
         bs = BeautifulSoup(resp.text, features="html.parser")
 
@@ -217,8 +270,15 @@ class Timetracker(object):
         for act in spans:
             ti_id = act.find_all('a')[0].attrs['href'].split('ti_id=')[1]
             data = act.find_all('td')
-            project = self._get_project(data[1].text)
-            task = self._get_task(project, data[2].text)
+            try:
+                project = self._get_project(data[1].text)
+                task = self._get_task(project, data[2].text)
+            except (KeyError, ValueError):
+                # E.g. closed tasks are missing in the form; entries we
+                # cannot map can never match an entry we upload.
+                log.debug('Ignoring existing entry %s: %s / %s', ti_id,
+                          data[1].text, data[2].text)
+                continue
             duration = data[3].text
             date = data[6].text
             desc = data[11].text.strip()
@@ -249,27 +309,30 @@ class Timetracker(object):
                     existing_id = existing_ids[0]
                     for id_ in existing_ids[1:]:
                         if dirty:
-                            print(self._describe('DUPLICATE', act, id_))
+                            print(self._describe(
+                                'DUPLICATE', act, id_, s, basic))
                         else:
                             self.set_duplicate(s, act, id_, basic)
             except KeyError:
                 if dirty:
-                    print(self._describe('NEW', act))
+                    print(self._describe('NEW', act, None, s, basic))
                 else:
                     self.add_entry(s, act, basic)
             else:
                 if dirty:
-                    print(self._describe('UPDATE', act, existing_id))
+                    print(self._describe(
+                        'UPDATE', act, existing_id, s, basic))
                 else:
                     self.update_entry(s, act, existing_id, basic)
 
-    def _describe(self, action, act, ti_id=None):
+    def _describe(self, action, act, ti_id=None, s=None, basic=None):
         project_title = self._get_project_title(act['project'])
         task_title = self._get_task_title(act['project'], act['task'])
-        return '%-9s %s %s (%s) / %s (%s) %s  %s%s' % (
+        invoice = 'ja' if self._get_invoice(s, act, basic) else 'nein'
+        return '%-9s %s %s (%s) / %s (%s) %s  %s%s [fakturiert: %s]' % (
             action, act['date'], project_title, act['project'],
             task_title, act['task'], act['duration'], act['desc'],
-            ' [ti_id=%s]' % ti_id if ti_id else '')
+            ' [ti_id=%s]' % ti_id if ti_id else '', invoice)
 
     def annotate_entry(self, entry):
         """Append the project and task ids in parentheses to an entry.
@@ -294,30 +357,42 @@ class Timetracker(object):
         try:
             project, task, desc = entry.split(':')
         except ValueError:
-            import pdb; pdb.set_trace()  # XXXXXXXXXX 
+            raise ValueError(
+                "Entry needs the form 'project: task: description': %s" %
+                entry)
         project = self._get_project(project.strip())
         return project, self._get_task(project, task.strip()), desc.strip()
 
-    def _get_invoice_flag(self, act):
-        if act['task'] in ('6162', '5470'):
-            return 'off'
-        if act['project'] in ('4018',):
-            return 'off'
-        return 'on'
+    def _get_invoice(self, s, act, basic):
+        """Ask the timetracker whether the entry is invoiced by default."""
+        key = (act['project'], act['task'])
+        if key not in self._invoice_cache:
+            resp = s.get(
+                self._url('/times/set_invoice'),
+                params={'project': act['project'], 'subproject': act['task']},
+                # The server answers with a 500 without a referer.
+                headers=self._get_form_headers(),
+                auth=basic)
+            resp.raise_for_status()
+            value = resp.text.strip()
+            if value not in ('true', 'false'):
+                raise RuntimeError(
+                    'Timetracker returned an invalid invoicing setting '
+                    '%r for %s/%s.' % (value, act['project'], act['task']))
+            self._invoice_cache[key] = value == 'true'
+        return self._invoice_cache[key]
 
-    def _get_form_data(self, act, ti_id=''):
-        return {
+    def _get_form_data(self, act, ti_id='', invoice=False):
+        data = {
             'form.ti_id': (None, ti_id),
             'form.performed': (None, act['date']),
-            'form.project.data': (None, '5420'),
             'form.project.group': (None, act['project']),
             'form.project.item': (None, act['task']),
             'form.effort.hour': (None, act['duration'].split(':')[0]),
             'form.effort.min': (
                 None, str(int(act['duration'][:-1].split(':')[1]))
             ),
-            'form.description': (None, act['desc']),
-            'form.invoice': (None, self._get_invoice_flag(act)),
+            'form.description': (None, act['desc'].strip()),
             'form.invoice.used': (None, ''),
             'form.km': (None, ''),
             'form.price': (None, ''),
@@ -326,11 +401,15 @@ class Timetracker(object):
             'fkt_changes': (None, ''),
             'form.actions.abschicken': (None, 'Abschicken'),
         }
+        if invoice:
+            # An unchecked checkbox is not submitted at all.
+            data['form.invoice'] = (None, 'on')
+        return data
 
     def _get_form_headers(self):
         return {
-            'referer': 'https://timetracker.risclog.de/times/add',
-            'origin': 'https://timetracker.risclog.de',
+            'referer': self._url('/times/add'),
+            'origin': self.settings.timetracker_url.rstrip('/'),
             'user-agent': (
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) '
                 'AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -353,23 +432,57 @@ class Timetracker(object):
                 act['desc'], msg, ti_id)
         print(msg)
 
-    def add_entry(self, s, act, basic):
+    def _validate(self, act):
+        """Return an error message if the entry cannot be uploaded."""
+        if not act['project'] or not act['task']:
+            return 'Project and task are required.'
+        if not act['desc'].strip():
+            return 'Description is empty.'
+        if act['duration'] in ('0:00h', ''):
+            return 'Duration must be positive.'
+        return None
+
+    def _post(self, s, act, basic, path, ti_id=''):
+        """POST the entry and report problems. Returns True on success."""
+        error = self._validate(act)
+        if error:
+            self.handle_error(act, error, ti_id)
+            return False
         resp = s.post(
-            'https://timetracker.risclog.de/times/add',
+            self._url(path),
             headers=self._get_form_headers(),
             auth=basic,
-            files=self._get_form_data(act)
+            files=self._get_form_data(
+                act, ti_id, self._get_invoice(s, act, basic))
         )
-        resp = BeautifulSoup(resp.text, features="html.parser")
+        if not resp.ok:
+            self.handle_error(act, 'HTTP %s' % resp.status_code, ti_id)
+            return False
+        doc = BeautifulSoup(resp.text, features="html.parser")
+        if self._has_login_form(doc):
+            raise RuntimeError('Timetracker session expired.')
+        if doc.title and doc.title.text.strip() == 'System Error':
+            self.handle_error(act, 'System Error', ti_id)
+            return False
+        message = doc.find('ul')
+        message = message.text.strip() if message else ''
+        if message == SUCCESS_MESSAGE:
+            return True
+        if message:
+            self.handle_error(act, message, ti_id)
+            return False
+        if not ti_id and not (
+                resp.history and
+                resp.url.rstrip('/').endswith('/times') and
+                not doc.find(attrs={'name': 'form.performed'})):
+            self.handle_error(
+                act, 'Submission outcome is uncertain, check the '
+                'timetracker before retrying.')
+            return False
+        return True
 
-        if resp.title.text == 'System Error':
-            self.handle_error(act, resp.title.text)
-            return
-
-        errors = resp.find_all('ul')
-        if errors:
-            self.handle_error(act, errors[0].text)
-            return
+    def add_entry(self, s, act, basic):
+        return self._post(s, act, basic, '/times/add')
 
     def set_duplicate(self, s, act, ti_id, basic):
         act['date'] = '31.01.2021'
@@ -377,37 +490,7 @@ class Timetracker(object):
         act['task'] = '5641'
         act['duration'] = '0:05h'
         act['desc'] = 'fehlerhafter Eintrag, bitte löschen'
-        resp = s.post(
-            'https://timetracker.risclog.de/times/edit',
-            headers=self._get_form_headers(),
-            auth=basic,
-            files=self._get_form_data(act, ti_id)
-        )
-        resp = BeautifulSoup(resp.text, features="html.parser")
-
-        if resp.title.text == 'System Error':
-            self.handle_error(act, resp.title.text, ti_id)
-            return
-
-        errors = resp.find_all('ul')
-        if errors:
-            self.handle_error(act, errors[0].text, ti_id)
-            return
+        return self._post(s, act, basic, '/times/edit', ti_id)
 
     def update_entry(self, s, act, ti_id, basic):
-        resp = s.post(
-            'https://timetracker.risclog.de/times/edit',
-            headers=self._get_form_headers(),
-            auth=basic,
-            files=self._get_form_data(act, ti_id)
-        )
-        resp = BeautifulSoup(resp.text, features="html.parser")
-
-        if resp.title.text == 'System Error':
-            self.handle_error(act, resp.title.text, ti_id)
-            return
-
-        errors = resp.find_all('ul')
-        if errors:
-            self.handle_error(act, errors[0].text, ti_id)
-            return
+        return self._post(s, act, basic, '/times/edit', ti_id)
